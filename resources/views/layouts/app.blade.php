@@ -24,13 +24,14 @@
         .alerta-sucesso { background: #dcfce7; color: #166534; }
         .alerta-erro { background: #fee2e2; color: #991b1b; }
         label { display: block; margin-top: 14px; font-weight: bold; }
-        input { width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+        input, select { width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: #fff; }
         .paginacao { margin-top: 16px; }
     </style>
 </head>
 <body>
     <header>
         <a href="{{ route('clientes.index') }}">Clientes</a>
+<a href="{{ route('pedidos.index') }}">Pedidos</a>
     </header>
 
     <main>
