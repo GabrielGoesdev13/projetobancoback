@@ -1,5 +1,6 @@
 SET search_path TO "Matheus_trabalho_BD", public;
 
+-- trigger 1
 CREATE TABLE IF NOT EXISTS log_status_entrega (
     id_log         INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     id_entrega     INTEGER NOT NULL REFERENCES entrega(id_entrega) ON DELETE CASCADE,
@@ -44,19 +45,13 @@ CREATE OR REPLACE PROCEDURE sp_registrar_ocorrencia(
 )
 LANGUAGE plpgsql
 AS $$
-DECLARE
-    v_id INTEGER;
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM entrega WHERE id_entrega = p_id_entrega) THEN
         RAISE EXCEPTION 'Entrega % não encontrada', p_id_entrega;
     END IF;
 
-    -- a tabela não tem id automático: gera o próximo com lock
-    PERFORM pg_advisory_xact_lock(hashtext('ocorrencia_id'));
-    SELECT COALESCE(MAX(id_ocorrencia), 0) + 1 INTO v_id FROM ocorrencia;
-
-    INSERT INTO ocorrencia (id_ocorrencia, id_entrega, tipo, descricao, data_ocorrencia, gravidade, resolvida)
-    VALUES (v_id, p_id_entrega, p_tipo, p_descricao, NOW(), p_gravidade, FALSE);
+    INSERT INTO ocorrencia (id_entrega, tipo, descricao, data_ocorrencia, gravidade, resolvida)
+    VALUES (p_id_entrega, p_tipo, p_descricao, NOW(), p_gravidade, FALSE);
 END;
 $$;
 
@@ -79,17 +74,12 @@ FOR EACH ROW
 WHEN (OLD.status IS DISTINCT FROM NEW.status)
 EXECUTE FUNCTION fn_log_status_entrega();
 
--- TRIGGER 2: gera o id da entrega nova e valida as datas
+-- TRIGGER 2
 CREATE OR REPLACE FUNCTION fn_prepara_valida_entrega()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    IF TG_OP = 'INSERT' AND NEW.id_entrega IS NULL THEN
-        PERFORM pg_advisory_xact_lock(hashtext('entrega_id'));
-        SELECT COALESCE(MAX(id_entrega), 0) + 1 INTO NEW.id_entrega FROM entrega;
-    END IF;
-
     IF NEW.data_entrega IS NOT NULL AND NEW.data_entrega::date < NEW.data_saida THEN
         RAISE EXCEPTION 'A data de entrega não pode ser anterior à data de saída';
     END IF;
